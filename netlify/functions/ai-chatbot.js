@@ -1,102 +1,164 @@
 // netlify/functions/ai-chatbot.js
-// 최종 완성 버전 - 버튼 기반 색상 추천 챗봇
+// 웹 타이포그래피 중심 챗봇
 
 const tinycolor = require('tinycolor2');
 
-// 색상 추천 데이터베이스
-const COLOR_SYSTEM = {
-    'soft-dynamic': {
-        title: '부드럽고 동적인',
-        keywords: { 
-            '귀여운': '#F8F2A1', 
-            '경쾌한': '#F0E442', 
-            '즐거운': '#FAD8A6', 
-            '사랑스러운': '#F05A8D', 
-            '아기자기한': '#F8C6CF', 
-            '재미있는': '#F9A637' 
+// 웹 타이포그래피 가이드 시스템
+const TYPOGRAPHY_SYSTEM = {
+    // 폰트 크기 체계
+    fontSize: {
+        'mobile': {
+            title: '모바일 환경',
+            sizes: {
+                'body': { min: '16px', recommended: '16-18px', description: 'WCAG 권장 최소 크기' },
+                'h1': { min: '24px', recommended: '28-32px', description: '페이지 제목' },
+                'h2': { min: '20px', recommended: '22-24px', description: '섹션 제목' },
+                'h3': { min: '18px', recommended: '18-20px', description: '소제목' },
+                'caption': { min: '14px', recommended: '14px', description: '보조 텍스트 (최소한으로 사용)' }
+            }
+        },
+        'desktop': {
+            title: '데스크톱 환경',
+            sizes: {
+                'body': { min: '16px', recommended: '16-18px', description: '본문 텍스트' },
+                'h1': { min: '32px', recommended: '36-48px', description: '페이지 제목' },
+                'h2': { min: '24px', recommended: '28-32px', description: '섹션 제목' },
+                'h3': { min: '20px', recommended: '20-24px', description: '소제목' },
+                'caption': { min: '14px', recommended: '14-16px', description: '보조 텍스트' }
+            }
         }
     },
-    'soft-static': {
-        title: '부드럽고 정적인',
-        keywords: { 
-            '깨끗한': '#E9F3F8', 
-            '맑은': '#97D4E9', 
-            '은은한': '#E4DDC8', 
-            '수수한': '#D3D3C1', 
-            '내추럴한': '#C8B68E', 
-            '부드러운': '#F1EBE0' 
+    
+    // 행간 (line-height) 가이드
+    lineHeight: {
+        'dense': { value: 1.2, usage: '제목, 헤딩', wcag: '최소값' },
+        'normal': { value: 1.5, usage: '일반 본문', wcag: 'AA 권장' },
+        'relaxed': { value: 1.6, usage: '긴 본문', wcag: 'AAA 권장' },
+        'loose': { value: 1.8, usage: '가독성 최우선', wcag: '접근성 우수' }
+    },
+    
+    // 자간 (letter-spacing) 가이드
+    letterSpacing: {
+        'tight': { value: '-0.025em', usage: '제목, 굵은 글꼴' },
+        'normal': { value: '0', usage: '일반 본문' },
+        'wide': { value: '0.025em', usage: '작은 글씨, 대문자' },
+        'wider': { value: '0.12em', usage: 'WCAG 최소 권장' },
+        'widest': { value: '0.15em', usage: 'WCAG 최적 권장' }
+    },
+    
+    // 폰트 조합 추천
+    fontPairing: {
+        'professional': {
+            title: '프로페셔널',
+            heading: 'Pretendard, -apple-system, sans-serif',
+            body: 'Pretendard, -apple-system, sans-serif',
+            description: '깔끔하고 전문적인 느낌'
+        },
+        'friendly': {
+            title: '친근한',
+            heading: '"Noto Sans KR", sans-serif',
+            body: '"Noto Sans KR", sans-serif',
+            description: '부드럽고 친근한 느낌'
+        },
+        'modern': {
+            title: '모던한',
+            heading: 'Inter, -apple-system, sans-serif',
+            body: 'Inter, -apple-system, sans-serif',
+            description: '현대적이고 깨끗한 느낌'
+        },
+        'classic': {
+            title: '클래식',
+            heading: '"Nanum Myeongjo", serif',
+            body: '"Noto Serif KR", serif',
+            description: '신뢰감 있는 전통적 느낌'
         }
     },
-    'hard-dynamic': {
-        title: '딱딱하고 동적인',
-        keywords: { 
-            '화려한': '#E94868', 
-            '다이나믹한': '#D53A30', 
-            '모던한': '#4D54A0', 
-            '스포티한': '#E69F00', 
-            '개성적인': '#4D54A0', 
-            '하이테크한': '#231F20' 
-        }
-    },
-    'hard-static': {
-        title: '딱딱하고 정적인',
-        keywords: { 
-            '클래식한': '#5A3B3C', 
-            '점잖은': '#766A65', 
-            '고상한': '#A694B6', 
-            '우아한': '#A694B6', 
-            '격식있는': '#2B2B2B', 
-            '이성적인': '#0072B2' 
+    
+    // 색상과 타이포그래피 조합
+    colorTypography: {
+        'high-contrast': {
+            background: '#FFFFFF',
+            text: '#000000',
+            ratio: '21:1',
+            usage: '최고 가독성'
+        },
+        'comfortable': {
+            background: '#FFFFFF',
+            text: '#212529',
+            ratio: '16.75:1',
+            usage: '편안한 읽기'
+        },
+        'soft': {
+            background: '#F8F9FA',
+            text: '#495057',
+            ratio: '7.48:1',
+            usage: '부드러운 느낌'
         }
     }
 };
 
-// 헥사 코드 유효성 검사
-const isValidHex = (hex) => /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex);
-
-// 명도 대비 분석
-const analyzeContrast = (hex) => {
-    if (!isValidHex(hex)) {
-        return { 
-            reply: '올바른 헥사 코드 형식이 아닙니다. #으로 시작하는 6자리 코드를 입력해주세요. (예: #0066CC)',
-            state: { step: 'awaiting_hex' }
-        };
-    }
-
-    const mainColor = tinycolor(hex);
-    const white = tinycolor('#FFFFFF');
-    const darkText = tinycolor('#212529');
-
-    const contrastWithWhite = tinycolor.readability(mainColor, white);
-    const contrastWithDarkText = tinycolor.readability(mainColor, darkText);
-
-    const whiteMeetsAA = contrastWithWhite >= 4.5;
-    const darkTextMeetsAA = contrastWithDarkText >= 4.5;
-
-    let result = `🎨 **${hex} 색상 분석 결과**\n\n`;
-    result += `**텍스트 색상 추천:**\n\n`;
-    result += `• **어두운 텍스트 (#212529)**\n`;
-    result += `  명도 대비: ${contrastWithDarkText.toFixed(2)}:1\n`;
-    result += `  ${darkTextMeetsAA ? '✅ WCAG AA 등급 만족' : '❌ WCAG AA 등급 미달'}\n\n`;
-    result += `• **밝은 텍스트 (#FFFFFF)**\n`;
-    result += `  명도 대비: ${contrastWithWhite.toFixed(2)}:1\n`;
-    result += `  ${whiteMeetsAA ? '✅ WCAG AA 등급 만족' : '❌ WCAG AA 등급 미달'}\n\n`;
+// 대화 플로우 상태
+const CONVERSATION_FLOWS = {
+    // 메인 메뉴
+    main: {
+        reply: "웹 타이포그래피 가이드에 오신 것을 환영합니다! 📝\n\n무엇을 도와드릴까요?",
+        buttons: [
+            '폰트 크기 가이드',
+            '행간/자간 설정',
+            '폰트 조합 추천',
+            '색상과 가독성',
+            '접근성 체크리스트'
+        ]
+    },
     
-    if (darkTextMeetsAA && whiteMeetsAA) {
-        result += `💡 **추천:** 두 색상 모두 사용 가능합니다. 배경에 따라 선택하세요.`;
-    } else if (darkTextMeetsAA) {
-        result += `💡 **추천:** 어두운 텍스트(#212529)를 사용하세요.`;
-    } else if (whiteMeetsAA) {
-        result += `💡 **추천:** 밝은 텍스트(#FFFFFF)를 사용하세요.`;
-    } else {
-        result += `⚠️ **경고:** 이 색상은 텍스트 배경으로 적합하지 않습니다. 다른 색상을 고려해보세요.`;
+    // 각 섹션별 상세 가이드
+    fontSize: {
+        reply: "어떤 환경의 폰트 크기를 확인하시겠어요?",
+        buttons: ['모바일 환경', '데스크톱 환경', '반응형 설계 팁']
+    },
+    
+    lineSpacing: {
+        reply: "행간과 자간 설정을 도와드릴게요. 어떤 용도인가요?",
+        buttons: ['본문 텍스트', '제목 텍스트', '긴 문서', '모바일 최적화']
+    },
+    
+    fontPairing: {
+        reply: "어떤 느낌의 폰트 조합을 원하시나요?",
+        buttons: ['프로페셔널', '친근한', '모던한', '클래식']
+    }
+};
+
+// 타이포그래피 분석 함수
+const analyzeTypography = (input) => {
+    // 폰트 크기 분석
+    const fontSizeMatch = input.match(/(\d+)(px|rem|em)/);
+    if (fontSizeMatch) {
+        const size = parseInt(fontSizeMatch[1]);
+        const unit = fontSizeMatch[2];
+        
+        let analysis = `📏 **${size}${unit} 폰트 크기 분석**\n\n`;
+        
+        if (unit === 'px') {
+            if (size < 14) {
+                analysis += '❌ **너무 작음**: 14px 미만은 가독성이 매우 떨어집니다.\n';
+                analysis += '💡 최소 16px 이상 사용을 권장합니다.\n';
+            } else if (size < 16) {
+                analysis += '⚠️ **주의 필요**: 본문에는 16px 이상을 권장합니다.\n';
+                analysis += '💡 보조 텍스트로만 제한적으로 사용하세요.\n';
+            } else if (size <= 18) {
+                analysis += '✅ **적절함**: 본문 텍스트로 적합합니다.\n';
+                analysis += '💡 행간을 1.5~1.6으로 설정하면 더 좋습니다.\n';
+            } else if (size <= 32) {
+                analysis += '✅ **제목 적합**: 소제목이나 강조 텍스트로 좋습니다.\n';
+            } else {
+                analysis += '✅ **대제목 적합**: 페이지 제목으로 활용하기 좋습니다.\n';
+            }
+        }
+        
+        return { reply: analysis, buttons: ['다른 크기 분석', '행간 가이드', '처음으로'] };
     }
     
-    return { 
-        reply: result,
-        buttons: ['다른 색상 분석하기', '색상 추천받기'],
-        state: { step: 'analysis_complete' }
-    };
+    return null;
 };
 
 // 메인 핸들러
@@ -113,11 +175,7 @@ exports.handler = async (event, context) => {
     }
     
     if (event.httpMethod !== 'POST') { 
-        return { 
-            statusCode: 405, 
-            headers, 
-            body: JSON.stringify({ error: 'Method Not Allowed' }) 
-        }; 
+        return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method Not Allowed' }) }; 
     }
 
     try {
@@ -128,107 +186,220 @@ exports.handler = async (event, context) => {
         
         let response = {};
 
-        // 초기 상태 또는 분석 완료 후 다시 시작
-        if (!state.step || state.step === 'init' || 
-            (state.step === 'analysis_complete' && message === '다른 색상 분석하기')) {
+        // 초기 상태 또는 처음으로 돌아가기
+        if (!state.step || state.step === 'init' || message === '처음으로') {
             response = {
-                reply: "안녕하세요! 웹 접근성 색상 컨설턴트입니다. 🎨\n\n정해진 메인 컬러가 있으신가요?",
-                buttons: ['네, 있어요', '아니요, 추천해주세요'],
-                state: { step: 'start' }
+                ...CONVERSATION_FLOWS.main,
+                state: { step: 'main' }
             };
         }
-        // 분석 완료 후 색상 추천 요청
-        else if (state.step === 'analysis_complete' && message === '색상 추천받기') {
+        // 폰트 크기 가이드
+        else if (message === '폰트 크기 가이드') {
             response = {
-                reply: "어떤 느낌의 색상을 원하시나요?",
-                buttons: ['Soft (부드러운)', 'Hard (딱딱한)'],
-                state: { step: 'awaiting_feel' }
+                ...CONVERSATION_FLOWS.fontSize,
+                state: { step: 'fontSize' }
             };
         }
-        // 시작 - Yes 선택
-        else if (state.step === 'start' && (message === '네, 있어요' || message === 'yes')) {
+        // 모바일 환경 선택
+        else if (state.step === 'fontSize' && message === '모바일 환경') {
+            const mobile = TYPOGRAPHY_SYSTEM.fontSize.mobile;
+            let guide = `📱 **모바일 웹 타이포그래피 가이드**\n\n`;
+            
+            for (const [key, value] of Object.entries(mobile.sizes)) {
+                guide += `**${key.toUpperCase()}**\n`;
+                guide += `• 최소: ${value.min}\n`;
+                guide += `• 권장: ${value.recommended}\n`;
+                guide += `• 용도: ${value.description}\n\n`;
+            }
+            
+            guide += `💡 **핵심 원칙**\n`;
+            guide += `• 본문은 반드시 16px 이상\n`;
+            guide += `• 터치 타겟은 44x44px 이상\n`;
+            guide += `• 충분한 행간 확보 (1.5 이상)`;
+            
             response = {
-                reply: "메인 컬러의 헥사 코드를 입력해주세요.\n(예: #0066CC, #FF5733)",
+                reply: guide,
+                buttons: ['데스크톱 환경', '행간/자간 설정', '처음으로'],
+                state: { step: 'fontSize_detail' }
+            };
+        }
+        // 데스크톱 환경 선택
+        else if (state.step === 'fontSize' && message === '데스크톱 환경') {
+            const desktop = TYPOGRAPHY_SYSTEM.fontSize.desktop;
+            let guide = `🖥️ **데스크톱 웹 타이포그래피 가이드**\n\n`;
+            
+            for (const [key, value] of Object.entries(desktop.sizes)) {
+                guide += `**${key.toUpperCase()}**\n`;
+                guide += `• 최소: ${value.min}\n`;
+                guide += `• 권장: ${value.recommended}\n`;
+                guide += `• 용도: ${value.description}\n\n`;
+            }
+            
+            guide += `💡 **핵심 원칙**\n`;
+            guide += `• 본문 최소 16px 유지\n`;
+            guide += `• 제목 계층 명확히 구분\n`;
+            guide += `• 한 줄에 45-75자 권장`;
+            
+            response = {
+                reply: guide,
+                buttons: ['모바일 환경', '행간/자간 설정', '처음으로'],
+                state: { step: 'fontSize_detail' }
+            };
+        }
+        // 행간/자간 설정
+        else if (message === '행간/자간 설정') {
+            response = {
+                ...CONVERSATION_FLOWS.lineSpacing,
+                state: { step: 'lineSpacing' }
+            };
+        }
+        // 본문 텍스트 행간
+        else if (state.step === 'lineSpacing' && message === '본문 텍스트') {
+            let guide = `📝 **본문 텍스트 행간/자간 가이드**\n\n`;
+            guide += `**행간 (Line Height)**\n`;
+            guide += `• 기본: 1.5 (WCAG AA 최소)\n`;
+            guide += `• 권장: 1.6 (편안한 읽기)\n`;
+            guide += `• 긴 문서: 1.8 (피로감 감소)\n\n`;
+            guide += `**자간 (Letter Spacing)**\n`;
+            guide += `• 기본: 0\n`;
+            guide += `• 작은 글씨 (14px): 0.025em\n`;
+            guide += `• WCAG 권장: 0.12em 이상\n\n`;
+            guide += `**단락 간격**\n`;
+            guide += `• 최소: 1.5em\n`;
+            guide += `• 권장: 2em`;
+            
+            response = {
+                reply: guide,
+                buttons: ['제목 텍스트', '모바일 최적화', '처음으로'],
+                state: { step: 'lineSpacing_detail' }
+            };
+        }
+        // 폰트 조합 추천
+        else if (message === '폰트 조합 추천') {
+            response = {
+                ...CONVERSATION_FLOWS.fontPairing,
+                state: { step: 'fontPairing' }
+            };
+        }
+        // 폰트 조합 상세
+        else if (state.step === 'fontPairing' && TYPOGRAPHY_SYSTEM.fontPairing[message.toLowerCase()]) {
+            const pairing = TYPOGRAPHY_SYSTEM.fontPairing[message.toLowerCase()];
+            let guide = `🎨 **${pairing.title} 폰트 조합**\n\n`;
+            guide += `**제목용 폰트**\n${pairing.heading}\n\n`;
+            guide += `**본문용 폰트**\n${pairing.body}\n\n`;
+            guide += `**특징**: ${pairing.description}\n\n`;
+            guide += `**CSS 예시**\n`;
+            guide += `\`\`\`css\n`;
+            guide += `h1, h2, h3 {\n  font-family: ${pairing.heading};\n}\n`;
+            guide += `body, p {\n  font-family: ${pairing.body};\n}\n`;
+            guide += `\`\`\``;
+            
+            response = {
+                reply: guide,
+                buttons: ['다른 조합 보기', '폰트 크기 가이드', '처음으로'],
+                state: { step: 'fontPairing_detail' }
+            };
+        }
+        // 색상과 가독성
+        else if (message === '색상과 가독성') {
+            let guide = `🎨 **색상과 타이포그래피 가독성**\n\n`;
+            
+            for (const [key, value] of Object.entries(TYPOGRAPHY_SYSTEM.colorTypography)) {
+                guide += `**${value.usage}**\n`;
+                guide += `• 배경: ${value.background}\n`;
+                guide += `• 텍스트: ${value.text}\n`;
+                guide += `• 명도비: ${value.ratio}\n\n`;
+            }
+            
+            guide += `💡 **WCAG 기준**\n`;
+            guide += `• 일반 텍스트: 4.5:1 이상\n`;
+            guide += `• 큰 텍스트 (18pt+): 3:1 이상\n`;
+            guide += `• AAA 등급: 7:1 이상`;
+            
+            response = {
+                reply: guide,
+                buttons: ['헥사코드 분석', '폰트 크기 가이드', '처음으로'],
+                state: { step: 'color' }
+            };
+        }
+        // 접근성 체크리스트
+        else if (message === '접근성 체크리스트') {
+            let guide = `✅ **웹 타이포그래피 접근성 체크리스트**\n\n`;
+            guide += `**필수 항목**\n`;
+            guide += `☐ 본문 최소 16px\n`;
+            guide += `☐ 행간 1.5 이상\n`;
+            guide += `☐ 명도비 4.5:1 이상\n`;
+            guide += `☐ 확대 200% 시 가로 스크롤 없음\n`;
+            guide += `☐ 사용자 폰트 크기 조절 가능\n\n`;
+            guide += `**권장 항목**\n`;
+            guide += `☐ 자간 0.12em 이상\n`;
+            guide += `☐ 단락 간격 2em\n`;
+            guide += `☐ 한 줄 45-75자\n`;
+            guide += `☐ 제목 계층 구조 명확\n`;
+            guide += `☐ 다크모드 지원`;
+            
+            response = {
+                reply: guide,
+                buttons: ['폰트 크기 가이드', '행간/자간 설정', '처음으로'],
+                state: { step: 'checklist' }
+            };
+        }
+        // 반응형 설계 팁
+        else if (message === '반응형 설계 팁') {
+            let guide = `📱💻 **반응형 타이포그래피 설계**\n\n`;
+            guide += `**유동적 크기 (Fluid Typography)**\n`;
+            guide += `\`\`\`css\n`;
+            guide += `/* clamp(최소, 선호, 최대) */\n`;
+            guide += `h1 {\n  font-size: clamp(1.5rem, 4vw, 3rem);\n}\n`;
+            guide += `p {\n  font-size: clamp(1rem, 2vw, 1.25rem);\n}\n`;
+            guide += `\`\`\`\n\n`;
+            guide += `**브레이크포인트별 설정**\n`;
+            guide += `• 모바일 (<768px): 16px\n`;
+            guide += `• 태블릿 (768-1024px): 17px\n`;
+            guide += `• 데스크톱 (>1024px): 18px\n\n`;
+            guide += `**rem 단위 활용**\n`;
+            guide += `• html { font-size: 100%; }\n`;
+            guide += `• 1rem = 16px 기준\n`;
+            guide += `• 미디어쿼리로 html font-size 조절`;
+            
+            response = {
+                reply: guide,
+                buttons: ['모바일 환경', '데스크톱 환경', '처음으로'],
+                state: { step: 'responsive' }
+            };
+        }
+        // 헥사코드 분석 (색상)
+        else if (state.step === 'color' && message === '헥사코드 분석') {
+            response = {
+                reply: "텍스트 색상의 헥사코드를 입력해주세요. (예: #212529)",
                 state: { step: 'awaiting_hex' }
-            };
-        }
-        // 시작 - No 선택
-        else if (state.step === 'start' && (message === '아니요, 추천해주세요' || message === 'no')) {
-            response = {
-                reply: "좋아요! 브랜드에 어울리는 메인 컬러를 찾아드릴게요.\n\n먼저, 원하시는 전체적인 **느낌**을 선택해주세요.",
-                buttons: ['Soft (부드러운)', 'Hard (딱딱한)'],
-                state: { step: 'awaiting_feel' }
             };
         }
         // 헥사코드 입력 처리
         else if (state.step === 'awaiting_hex') {
-            response = analyzeContrast(message.trim());
-        }
-        // 느낌 선택
-        else if (state.step === 'awaiting_feel') {
-            const feel = message.toLowerCase().includes('soft') ? 'soft' : 'hard';
-            response = {
-                reply: `'${feel === 'soft' ? '부드러운' : '딱딱한'}' 느낌이군요!\n\n이번엔 원하시는 **분위기**를 선택해주세요.`,
-                buttons: ['Static (정적인)', 'Dynamic (동적인)'],
-                state: { step: 'awaiting_mood', feel }
-            };
-        }
-        // 분위기 선택
-        else if (state.step === 'awaiting_mood') {
-            const mood = message.toLowerCase().includes('static') ? 'static' : 'dynamic';
-            const groupKey = `${state.feel}-${mood}`;
-            const group = COLOR_SYSTEM[groupKey];
-            
-            if (!group) {
-                throw new Error('Invalid color group');
-            }
-            
-            response = {
-                reply: `'${group.title}' 스타일이네요!\n\n마지막으로, 아래 키워드 중 브랜드와 가장 잘 맞는 것을 선택해주세요.`,
-                buttons: Object.keys(group.keywords),
-                state: { step: 'awaiting_keyword', groupKey }
-            };
-        }
-        // 키워드 선택
-        else if (state.step === 'awaiting_keyword') {
-            const group = COLOR_SYSTEM[state.groupKey];
-            if (!group) {
-                throw new Error('Invalid color group in state');
-            }
-            
-            const hexCode = group.keywords[message];
-            if (!hexCode) {
-                response = {
-                    reply: "선택하신 키워드를 찾을 수 없습니다. 다시 선택해주세요.",
-                    buttons: Object.keys(group.keywords),
-                    state: { step: 'awaiting_keyword', groupKey: state.groupKey }
-                };
+            const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+            if (hexPattern.test(message.trim())) {
+                const analysis = analyzeContrast(message.trim());
+                response = analysis;
             } else {
-                response = {
-                    reply: `🎨 추천 색상을 찾았습니다!\n\n**'${message}'** 느낌의 메인 컬러: **${hexCode}**\n\n이 색상의 명도 대비를 분석해드릴까요?`,
-                    buttons: ['네, 분석해주세요', '다시 선택하기'],
-                    state: { step: 'ask_analyze_after_recommend', hex: hexCode }
-                };
-            }
-        }
-        // 추천 후 분석 여부
-        else if (state.step === 'ask_analyze_after_recommend') {
-            if (message === '네, 분석해주세요') {
-                response = analyzeContrast(state.hex);
-            } else if (message === '다시 선택하기') {
-                response = {
-                    reply: "다시 선택해드릴게요. 원하시는 느낌을 선택해주세요.",
-                    buttons: ['Soft (부드러운)', 'Hard (딱딱한)'],
-                    state: { step: 'awaiting_feel' }
-                };
+                // 폰트 크기 분석 시도
+                const typographyAnalysis = analyzeTypography(message);
+                if (typographyAnalysis) {
+                    response = typographyAnalysis;
+                } else {
+                    response = {
+                        reply: "올바른 헥사코드 형식이 아닙니다. #000000 형식으로 입력해주세요.",
+                        buttons: ['다시 입력', '처음으로'],
+                        state: { step: 'awaiting_hex' }
+                    };
+                }
             }
         }
         // 기본 응답
         else {
             response = {
-                reply: "죄송합니다. 이해하지 못했습니다. 처음부터 다시 시작할게요.\n\n정해진 메인 컬러가 있으신가요?",
-                buttons: ['네, 있어요', '아니요, 추천해주세요'],
-                state: { step: 'start' }
+                ...CONVERSATION_FLOWS.main,
+                state: { step: 'main' }
             };
         }
 
@@ -252,3 +423,51 @@ exports.handler = async (event, context) => {
         };
     }
 };
+
+// 색상 대비 분석 (타이포그래피 관점)
+function analyzeContrast(hex) {
+    const mainColor = tinycolor(hex);
+    const white = tinycolor('#FFFFFF');
+    const black = tinycolor('#000000');
+    const lightBg = tinycolor('#F8F9FA');
+    
+    const contrastWithWhite = tinycolor.readability(mainColor, white);
+    const contrastWithBlack = tinycolor.readability(mainColor, black);
+    const contrastWithLight = tinycolor.readability(mainColor, lightBg);
+    
+    let result = `🎨 **${hex} 타이포그래피 분석**\n\n`;
+    
+    result += `**흰 배경 (#FFFFFF)**\n`;
+    result += `• 명도비: ${contrastWithWhite.toFixed(2)}:1\n`;
+    result += `• 일반 텍스트: ${contrastWithWhite >= 4.5 ? '✅ 사용 가능' : '❌ 사용 불가'}\n`;
+    result += `• 큰 텍스트(18pt+): ${contrastWithWhite >= 3 ? '✅ 사용 가능' : '❌ 사용 불가'}\n\n`;
+    
+    result += `**검은 배경 (#000000)**\n`;
+    result += `• 명도비: ${contrastWithBlack.toFixed(2)}:1\n`;
+    result += `• 일반 텍스트: ${contrastWithBlack >= 4.5 ? '✅ 사용 가능' : '❌ 사용 불가'}\n\n`;
+    
+    result += `**밝은 회색 배경 (#F8F9FA)**\n`;
+    result += `• 명도비: ${contrastWithLight.toFixed(2)}:1\n`;
+    result += `• 일반 텍스트: ${contrastWithLight >= 4.5 ? '✅ 사용 가능' : '❌ 사용 불가'}\n\n`;
+    
+    result += `💡 **추천 사용법**\n`;
+    if (contrastWithWhite >= 7) {
+        result += `• 모든 크기의 텍스트에 우수함\n`;
+        result += `• 본문 텍스트 최적`;
+    } else if (contrastWithWhite >= 4.5) {
+        result += `• 일반 본문 텍스트 사용 가능\n`;
+        result += `• 중요 정보는 굵게 표시 권장`;
+    } else if (contrastWithWhite >= 3) {
+        result += `• 18pt 이상 큰 텍스트만 사용\n`;
+        result += `• 제목이나 강조 텍스트용`;
+    } else {
+        result += `• 텍스트 색상으로 부적합\n`;
+        result += `• 배경색이나 장식용으로만 사용`;
+    }
+    
+    return {
+        reply: result,
+        buttons: ['다른 색상 분석', '폰트 크기 가이드', '처음으로'],
+        state: { step: 'color_analyzed' }
+    };
+}

@@ -156,3 +156,4 @@ exports.handler = async (event, context) => {
     return { statusCode: 500, body: JSON.stringify({ error: '서버 내부 오류.' }) };
   }
 };
+
