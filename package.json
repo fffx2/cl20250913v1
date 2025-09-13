@@ -1,0 +1,22 @@
+{
+  "name": "accessibility-design-assistant",
+  "version": "1.0.0",
+  "description": "WCAG & IRI 기반 HTML 접근성 분석 및 AI 디자인 어시스턴트",
+  "main": "build.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "css": "^3.0.0",
+    "css-select": "^5.1.0",
+    "openai": "^3.3.0",
+    "tinycolor2": "^1.6.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

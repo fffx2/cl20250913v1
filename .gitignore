@@ -1,0 +1,5 @@
+#Dependencies - 절대 업로드하면 안 됨
+/node_modules
+
+#Environment variables - 절대 업로드하면 안 됨
+/.env

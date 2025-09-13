@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>접근성 디자인 어시스턴트 - WCAG & IRI 기반 HTML 분석 도구_20250909</title>
+    <meta name="description" content="HTML 접근성을 분석하고 WCAG 2.1 및 IRI 색채 시스템 기반으로 디자인을 개선하는 AI 어시스턴트">
+    
+    <!-- Pretendard 웹폰트 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preload" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css"></noscript>
+    
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+    
+<body>
+    <a href="#main-content" class="skip-link">메인 콘텐츠로 건너뛰기</a>
+    
+    <header role="banner" class="header">
+        <div class="container">
+            <h1 class="logo"> <span aria-hidden="true">🎨</span> 접근성 디자인 어시스턴트
+            </h1>
+            <p class="tagline">WCAG 2.1 & IRI 색채 시스템 기반 HTML 분석 도구</p>
+        </div>
+    </header>
+
+    <nav role="navigation" class="nav" aria-label="주요 메뉴">
+        <div class="container">
+            <ul class="nav-list">
+                <li><a href="#analyzer" class="nav-link active" aria-current="page">HTML 분석</a></li>
+                <li><a href="#chatbot" class="nav-link">AI 어시스턴트</a></li>
+                <li><a href="#guidelines" class="nav-link">가이드라인</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main id="main-content" role="main" class="main">
+        <section id="analyzer" class="section analyzer-section" aria-labelledby="analyzer-title">
+            <div class="container">
+                <h2 id="analyzer-title" class="section-title">HTML 접근성 분석기</h2>
+                <p class="section-description">
+                    HTML 파일을 업로드하여 WCAG 2.1 기준과 IRI 색채 시스템을 바탕으로 접근성을 분석받으세요.
+                </p>
+                
+                <div class="upload-area">
+                    <label for="html-file" class="upload-label">
+                        <span class="upload-icon" aria-hidden="true">📁</span>
+                        <span class="upload-text">HTML 파일을 선택하거나 드래그하여 업로드</span>
+                    </label> <input type="file" id="html-file" class="file-input" accept=".html,.htm" aria-describedby="file-help">
+                    <p id="file-help" class="help-text">지원 형식: .html, .htm</p>
+                </div>
+
+                <div class="analysis-results" id="analysis-results" aria-live="polite" aria-atomic="true">
+                    </div>
+            </div>
+        </section>
+
+        <section id="chatbot" class="section chatbot-section" aria-labelledby="chatbot-title">
+            <div class="container">
+                <h2 id="chatbot-title" class="section-title">AI 디자인 어시스턴트</h2>
+                <p class="section-description">
+                    디자인 팀장 AI와 함께 접근성과 UX를 개선하는 방법을 상담받으세요.
+                </p>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="채팅 메시지">
+                        </div>
+                    
+                    <form class="chat-input-form" id="chat-form" role="form" aria-label="메시지 전송">
+                        <div class="input-group">
+                            <label for="chat-input" class="visually-hidden">메시지 입력</label>
+                            <textarea id="chat-input" class="chat-input" placeholder="접근성이나 디자인에 대해 질문해보세요..." rows="2" required></textarea>
+                            <button type="submit" class="send-button" aria-label="메시지 전송">
+                                <span aria-hidden="true">➤</span> </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="guidelines" class="section guidelines-section" aria-labelledby="guidelines-title">
+            <div class="container">
+                <h2 id="guidelines-title" class="section-title">접근성 가이드라인</h2>
+                <div class="guidelines-grid">
+                    <article class="guideline-card" aria-labelledby="wcag-title">
+                        <h3 id="wcag-title" class="card-title">WCAG 2.1 핵심 원칙</h3>
+                        <dl class="principle-list"> 
+                            <dt>인식 가능 (Perceivable)</dt>
+                            <dd>모든 사용자가 정보를 인식할 수 있어야 합니다.</dd>
+                            <dt>운용 가능 (Operable)</dt>
+                            <dd>모든 사용자가 인터페이스를 조작할 수 있어야 합니다.</dd>
+                            <dt>이해 가능 (Understandable)</dt>
+                            <dd>정보와 UI 조작 방법을 이해할 수 있어야 합니다.</dd>
+                            <dt>견고함 (Robust)</dt>
+                            <dd>다양한 기술로 접근할 수 있어야 합니다.</dd>
+                        </dl>
+                    </article>
+
+                    <article class="guideline-card" aria-labelledby="color-title">
+                        <h3 id="color-title" class="card-title">색상 대비 기준</h3>
+                        <table class="contrast-table">
+                            <caption>WCAG 색상 대비 최소 기준</caption> <thead>
+                                <tr>
+                                    <th scope="col">텍스트 크기</th> <th scope="col">AA 등급</th>
+                                    <th scope="col">AAA 등급</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th scope="row">일반 텍스트</th> <td>4.5:1</td>
+                                    <td>7:1</td>
+                                </tr>
+                                 <tr>
+                                    <th scope="row">큰 텍스트 (18pt+)</th>
+                                    <td>3:1</td>
+                                    <td>4.5:1</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </article>
+                    <article class="guideline-card" aria-labelledby="iri-title">
+                         <h3 id="iri-title" class="card-title">IRI 색채 시스템</h3>
+                         <p>접근성을 고려한 색상 선택과 조화를 위한 체계적 접근법</p>
+                         <ul>
+                             <li><strong>Primary:</strong> 브랜드 색상, 주요 CTA</li>
+                             <li><strong>Secondary:</strong> 보조 색상, 강조 요소</li>
+                             <li><strong>Neutral:</strong> 텍스트, 배경, 경계선</li>
+                         </ul>
+                     </article>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer role="contentinfo" class="footer">
+        <div class="container">
+            <p>&copy; 2025 접근성 디자인 어시스턴트. WCAG 2.1 & IRI 색채 시스템 기반.</p>
+            <p>모든 사용자를 위한 포용적인 웹 디자인을 지향합니다.</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

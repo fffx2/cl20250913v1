@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions.analyze-html]
+  runtime = "nodejs22.x"
+  timeout = 9
+
+[functions.ai-chatbot]
+  runtime = "nodejs22.x"
+  timeout = 9
+
+[functions.recommend-design]
+  runtime = "nodejs22.x"
+  timeout = 9
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[dev]
+  functions = "netlify/functions"
+  publish = "public"
+  port = 8888
